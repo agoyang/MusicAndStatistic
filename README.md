@@ -1,2 +1,2 @@
 # MusicAndStatistic
-Code for my bachelor degree thesis.
+Code for my bachelor's degree thesis.
