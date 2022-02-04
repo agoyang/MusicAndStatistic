@@ -1,11 +1,7 @@
 from mido import MidiFile, MidiTrack, Message
 import mido
 import numpy as np
-import time
 import string
-
-mid = mido.MidiFile('/Users/liuxinhong/Documents/毕业论文/数据集/bach_846_format0.midi',
- clip=True)
 
 def msg2dict(msg):
     result = dict()
@@ -67,9 +63,41 @@ def mid2arry(mid, min_msg_pct=0.1):
     ends = np.where(sums > 0)[0]
     return all_arys[min(ends): max(ends)]
 
-result_array = mid2arry(mid)
-print(result_array[:5])
-# import matplotlib.pyplot as plt
-# plt.plot(range(result_array.shape[0]), np.multiply(np.where(result_array>0, 1, 0), range(1, 89)), marker='.', markersize=1, linestyle='')
-# plt.title("nocturne_27_2_(c)inoue.mid")
-# plt.show()
+def arry2mid(ary, tempo=500000):
+    # get the difference
+    new_ary = np.concatenate([np.array([[0] * 88]), np.array(ary)], axis=0)
+    changes = new_ary[1:] - new_ary[:-1]
+    # create a midi file with an empty track
+    mid_new = mido.MidiFile()
+    track = mido.MidiTrack()
+    mid_new.tracks.append(track)
+    track.append(mido.MetaMessage('set_tempo', tempo=tempo, time=0))
+    # add difference in the empty track
+    last_time = 0
+    for ch in changes:
+        if set(ch) == {0}:  # no change
+            last_time += 1
+        else:
+            on_notes = np.where(ch > 0)[0]
+            on_notes_vol = ch[on_notes]
+            off_notes = np.where(ch < 0)[0]
+            first_ = True
+            for n, v in zip(on_notes, on_notes_vol):
+                new_time = last_time if first_ else 0
+                track.append(mido.Message('note_on', note=n + 21, velocity=v, time=new_time))
+                first_ = False
+            for n in off_notes:
+                new_time = last_time if first_ else 0
+                track.append(mido.Message('note_off', note=n + 21, velocity=0, time=new_time))
+                first_ = False
+            last_time = 0
+    return mid_new
+
+def file2arry(fname):
+    mid = mido.MidiFile('/Users/liuxinhong/Documents/毕业论文/数据集/bach_846_format0.midi',
+ clip=True)
+    return mid2arry(mid)
+
+def arry2file(ary, fname='new_midi.mid'):
+    mid = arry2mid(ary)
+    mid.save(fname)
