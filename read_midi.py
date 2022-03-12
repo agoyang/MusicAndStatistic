@@ -1,5 +1,7 @@
 from music21 import *
 import numpy as np
+from collections import Counter
+import matplotlib.pyplot as plt
 
 class MyMidi():
     def __init__(self, file):
@@ -18,7 +20,7 @@ class MyMidi():
         for part in s2.parts:
             print(str(part))
 
-    def read_midi(self, ins):
+    def read_midi(self, ins, threshold = 3, show_hist = True):
 
         #ins(str): selected instrument
         file = self.file
@@ -51,11 +53,23 @@ class MyMidi():
                     elif isinstance(element, chord.Chord):
                         notes.append('.'.join(str(n) for n in element.normalOrder))
         notes = np.array(notes)
-        unique_x = list(set(notes.ravel()))
+        freq = dict(Counter(notes))
+        no=[count for _,count in freq.items()]
+        plt.figure(figsize=(5,5))
+        plt.hist(no)
+        if show_hist:   plt.show()
+        frequent_notes = [note for note, count in freq.items() if count>=threshold]
+        new_music=[]
+        for note_ in notes:
+            if note_ in frequent_notes:
+                new_music.append(note_)
+            
+        new_music = np.array(new_music)
+        unique_x = list(set(new_music.ravel()))
         self.x_note_to_int = dict((notes, number) for number, notes in enumerate(unique_x))
         self.x_int_to_note = dict((number, note_) for number, note_ in enumerate(unique_x))
         x_seq=[]
-        for i in notes:
+        for i in new_music:
             #assigning unique integer to every note
             x_seq.append(self.x_note_to_int[i])
         return x_seq
