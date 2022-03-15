@@ -57,6 +57,9 @@ class MyMidi():
                     elif isinstance(element, chord.Chord):
                         notes.append('.'.join(str(n) for n in element.normalOrder))
                         dur.append(element.duration.quarterLength)
+                    elif isinstance(element, note.Rest):
+                        notes.append(element.name)
+                        dur.append(element.duration.quarterLength)
         notes = np.array(notes)
         df = pd.DataFrame()
         df['notes'] = notes
@@ -64,7 +67,8 @@ class MyMidi():
         freq = dict(Counter(notes))
         no=[count for _,count in freq.items()]
         plt.figure(figsize=(5,5))
-        plt.hist(no)
+        plt.hist(no[1:])
+        plt.title('Hist without the most frequent')
         if show_hist:   plt.show()
         frequent_notes = [note for note, count in freq.items() if count>=threshold]
         
@@ -72,7 +76,7 @@ class MyMidi():
         int_seq, self.unique = pd.factorize(list(zip(df.notes, df.duration)))
         return int_seq
 
-    def convert_to_midi(self, predictions, fname):
+    def convert_to_midi(self, predictions, fname, skip_rest_rate = 0.3):
         prediction_output = [self.unique[i] for i in predictions]
         offset = 0
         output_notes = []
@@ -96,6 +100,13 @@ class MyMidi():
                 new_chord = chord.Chord(notes)
                 new_chord.offset = offset
                 output_notes.append(new_chord)
+
+            #patten is a rest
+            elif pattern == 'rest':
+                new_rest = note.Rest()
+                new_rest.duration.quarterLength = dur
+                new_rest.offset = offset
+                output_notes.append(new_rest)
                 
             # pattern is a note
             else:
@@ -107,6 +118,9 @@ class MyMidi():
                 output_notes.append(new_note)
 
             # increase offset each iteration so that notes do not stack
-            offset += 1
+            if dur > 1:
+                offset += 1
+            else:
+                offset += dur
         midi_stream = stream.Stream(output_notes)
         midi_stream.write('midi', fp=fname)
