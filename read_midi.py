@@ -45,7 +45,6 @@ class MyMidi():
             
                 notes_to_parse = part.recurse() 
         
-                #finding whether a particular element is note or a chord
                 for element in notes_to_parse:
                     
                     #note
@@ -117,7 +116,6 @@ class MyMidi():
                 new_note.storedInstrument = instrument.Piano()
                 output_notes.append(new_note)
 
-            # increase offset each iteration so that notes do not stack
             if dur > 1:
                 offset += 1
             else:
