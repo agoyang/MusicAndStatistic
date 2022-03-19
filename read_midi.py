@@ -1,4 +1,3 @@
-from hashlib import new
 from music21 import *
 import numpy as np
 from collections import Counter
